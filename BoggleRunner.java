@@ -12,9 +12,9 @@ public class BoggleRunner
 		
 		for (int i = 1; i <= 3; i++)	//number of rounds
 		{
-			for (int j = 0; j < 2; j++)	//2 players
+			for (int j = 0; j < game.getPlayers().length; j++)
 			{
-				System.out.println("Press enter to begin the turn");
+				System.out.println("Press enter to begin " + game.getCurrentPlayer().getName() + "'s turn");
 				scan.nextLine();
 				
 				long startTime = System.currentTimeMillis();
@@ -22,19 +22,14 @@ public class BoggleRunner
 				
 				game.printBoard();
 				System.out.println();
-				System.out.println("It's now " + game.getCurrentPlayer().getName() + "'s turn!");
-				System.out.println();
-				System.out.println("Type in all of the words you see! Remember, they must connect!");
-				while (elapsedTime < 20*1000) 
+				System.out.println(game.getCurrentPlayer().getName() + 
+						", type in all of the words you see! Remember, they must connect!");
+				while (elapsedTime < 60*1000) 
 				{					
 					String word = scan.nextLine().toUpperCase();
-					if (game.checkBoardValidity(word) == true)
+					if (game.checkBoardValidity(word))
 					{
-						game.getCurrentPlayer().addPoints(word);
-					}
-					if (game.checkBoardValidity(word) == false)
-					{
-						//System.out.println("Input was invalid!");
+						game.getCurrentPlayer().getWords().add(word);
 					}
 				    elapsedTime = (new Date()).getTime() - startTime;
 				}
@@ -42,10 +37,36 @@ public class BoggleRunner
 				game.changeCurrentPlayer();
 			}
 			System.out.println("Round " + i + " is now over." );
-			System.out.println(game.getPlayer1());
-			System.out.println(game.getPlayer2());
+			
+			//Print out each player's lists
+			for(int j = 0; j < game.getPlayers().length; j++)
+			{
+				System.out.println(game.getPlayers()[j].getName() + " words: " + game.getPlayers()[j].getWords());
+			}
+			System.out.println();
+			
+			//Eliminate duplicates
+			game.crossReference();
+			
+			//Print out edited Lists
+			for(int j = 0; j < game.getPlayers().length; j++)
+			{
+				System.out.println(game.getPlayers()[j].getName() + "'s edited list: " + game.getPlayers()[j].getWords());
+			}
+			System.out.println();
+			
+			//Print out round/cumulative scores
+			//Print out edited Lists
+			for(int j = 0; j < game.getPlayers().length; j++)
+			{
+				System.out.println(game.getPlayers()[j]);
+			}
+			System.out.println();
+			
 			game.initializeBoard();
 		}
+		game.printWinner();
 	}
+	
 
 }

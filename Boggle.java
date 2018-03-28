@@ -4,40 +4,37 @@ import java.io.*;
 public class Boggle
 {
 	private char[][] board;
-	private Player currentPlayer;
-	private Player player1;
-	private Player player2;
+	private int currentPlayer;
+	private Player [] players;
 	private List<String> dictionary;
-	private List<String> masterWordList;
+	private HashSet<String> masterWordList;
 	final int BOARD_SIZE = 4;
 
 	public Boggle() throws IOException
 	{
 		dictionary = new ArrayList<String>();
-		masterWordList = new ArrayList<String>();
+		masterWordList = new HashSet<String>();
 		populateDictionary();	
 		Scanner scan = new Scanner(System.in);
-		System.out.println("Enter name of player 1:");
-		player1 = new Player(scan.nextLine());
-		System.out.println("Enter name of player 2:");
-		player2 = new Player(scan.nextLine());
+		System.out.println("How many players will be playing Boggle today?");
+		int numPlayers = scan.nextInt();
+		while (numPlayers < 1) 
+		{
+			System.out.println("You can't play with " + numPlayers + " players. Please enter a valid number.");
+			numPlayers = scan.nextInt();
+		}
+		scan.nextLine(); //eat up newline character
+		players = new Player[numPlayers];
+		for(int i = 0; i < players.length; i++)
+		{
+			System.out.println("Enter name of player " + (i + 1) + ":");
+			players[i] = new Player(scan.nextLine());
+		}
 		
 		board = new char[BOARD_SIZE][BOARD_SIZE];
 		initializeBoard();
-		
-		masterWordList.clear();
-		findAllWords();	//Make masterWordList
-		//System.out.println(masterWordList);
-		
-		int a = (int) ( Math.random() * 2 );
-		if (a == 0)
-		{
-			currentPlayer = player1;
-		}
-		else
-		{
-			currentPlayer = player2;
-		}
+
+		currentPlayer = 0;
 	}
 
 	public void initializeBoard()
@@ -52,13 +49,17 @@ public class Boggle
 			for (int col = 0; col < BOARD_SIZE; col++)
 			{
 				String temp = dice.remove((int)(Math.random()*dice.size()));
-				
 				board[row][col] = temp.charAt((int)(Math.random()*temp.length()));
 			}
 		}
 		masterWordList.clear();
 		findAllWords();	//Make masterWordList
-//		System.out.println(masterWordList);
+		
+		for(int i = 0; i < players.length; i++)
+		{
+			players[i].setRoundScore(0);
+			players[i].getWords().clear();
+		}
 		
 	}
 
@@ -162,9 +163,9 @@ public class Boggle
 					// newRow/newCol point to an index on the board
 					// this index isn't the same letter
 					// this letter has not already been used to create a word
-					if(row > 0 && row < board.length - 1 && col > 0 && col < board[row].length - 1 
+					if(newRow >= 0 && newRow < board.length && newCol >= 0 && newCol < board[newRow].length 
 							&& !(row == newRow && col == newCol)
-							&& !isPointInList(listOfPoints, row, col + 1) )
+							&& !isPointInList(listOfPoints, newRow, newCol) )
 					{
 						wordBuilder(newRow, newCol, word, new ArrayList<>(listOfPoints));
 					}
@@ -184,6 +185,7 @@ public class Boggle
 			}
 		}
 		return false;
+		
 	}
 	
 	/**
@@ -261,28 +263,114 @@ public class Boggle
 
 	public Player getCurrentPlayer()
 	{
-		return currentPlayer;
+		return players[currentPlayer];
 	}
 
-	public Player getPlayer1()
+	public Player[] getPlayers()
 	{
-		return player1;
+		return players;
 	}
 
-	public Player getPlayer2()
-	{
-		return player2;
-	}
-	
 	public void changeCurrentPlayer()
 	{
-		if (currentPlayer == player1)
+		currentPlayer++;
+		currentPlayer %= players.length;
+	}
+	
+	public void crossReference()
+	{
+		HashSet<String> seenOnce = new HashSet<String>(players[0].getWords());
+		HashSet<String> seenMoreThanOnce = new HashSet<String>();
+		for(int i = 1; i < players.length; i++)
 		{
-			currentPlayer = player2;
+			//Remove elements in this set that have been seen more than once
+			players[i].getWords().removeAll(seenMoreThanOnce);
+			
+			//Create a subSet of elements that have been seen once
+			//		-Remove this subSet from seenOnce
+			//		-Remove this subSet from  this set
+			//		-Add this subset to seenMoreThanOnce
+			HashSet<String> temp = new HashSet<String>(players[i].getWords());
+			temp.retainAll(seenOnce);
+			players[i].getWords().removeAll(temp);
+			seenOnce.removeAll(temp);
+			seenMoreThanOnce.addAll(temp);
+
+			//Add remaining elements from set to seen once
+			seenOnce.addAll(players[i].getWords());
+		}
+		
+		for(int i = 0; i < players.length; i++)
+		{
+			//Remove elements in this set that have been seen more than once
+			players[i].getWords().removeAll(seenMoreThanOnce);
+			calculateRoundScore(players[i]);
+		}
+	}
+	public void calculateRoundScore (Player p)
+	{
+		
+		for (String word : p.getWords())
+		{
+			int len = word.length();
+			int points = 11;
+			
+			if (len == 3 || len == 4)
+				points = 1;
+			else if (len == 5)
+				points = 2;
+			else if (len == 6)
+				points = 3;
+			else if (len == 7)
+				points = 5;
+			
+			p.setRoundScore(p.getRoundScore() + points);
+		}
+		p.setPoints(p.getPoints() + p.getRoundScore());
+	}
+	
+	public void printWinner()
+	{
+		ArrayList<Player> winners = new ArrayList<Player>();
+		winners.add(players[0]);
+		for(int i = 1; i < players.length; i++)
+		{
+			if (players[i].getPoints() > winners.get(0).getPoints())
+			{
+				winners.clear();
+				winners.add(players[i]);
+			}
+			else if(players[i].getPoints() == winners.get(0).getPoints())
+			{
+				winners.add(players[i]);
+			}
+		}
+		if(winners.size() > 1)
+		{
+			System.out.println("We have a draw!");
+			for(int i = 0; i < winners.size(); i++)
+			{
+				System.out.print(winners.get(i).getName());
+				if(i == winners.size() - 2)
+				{
+					if (winners.size() > 2)
+						System.out.print(",");
+					System.out.print(" and ");
+				}
+				else if (i == winners.size() - 1)
+				{
+					System.out.print(" share the victory!" );
+				}
+				else if (winners.size() > 2)
+				{
+					System.out.print(", ");
+				}
+			}
 		}
 		else
 		{
-			currentPlayer = player1;
+			System.out.println(winners.get(0).getName() + " is the winner!");
 		}
+		
 	}
 }

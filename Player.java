@@ -3,37 +3,58 @@ public class Player
 {
 	private String name;
 	private int points;
-	private ArrayList<String> words;
+	private int roundScore;
+	private HashSet<String> words;
 
 	public Player() // the default constructor
 	{
 		name = "Player 1";
 		points = 0;
-		words = new ArrayList<String>();
+		words = new HashSet<String>();
 	}
 
 	public Player(String name)
 	{
 		this.name = name;
+		points = 0;
+		words = new HashSet<String>();
 	}
 	
-	public int getPoints() // getter
-	{
-		return points;
-	}
 
 	public String getName()
 	{
 		return name;
 	}
 
-	public void addPoints(String word) // setter
+	public HashSet<String> getWords()
 	{
-		points += word.length();
+		return words;
 	}
 
+	
+	public int getRoundScore()
+	{
+		return roundScore;
+	}
+
+	public void setRoundScore(int roundScore)
+	{
+		this.roundScore = roundScore;
+	}
+
+	public int getPoints() // getter
+	{
+		return points;
+	}
+	
+	public void setPoints(int points)
+	{
+		this.points = points;
+	}
+
+	
 	public String toString()
 	{
-		return name + " has " + points + " points!";
+		return name + " scored " + roundScore + " points and now has " + points + " points!";
 	}
 }
